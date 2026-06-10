@@ -12,6 +12,7 @@ import { Boom } from '@hapi/boom';
 import pino from 'pino';
 import chalk from 'chalk';
 import express from 'express';
+import QRCode from 'qrcode';
 import { readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -21,7 +22,24 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // ─── Keep-alive Server ────────────────────────────────────────────────────────
 const app = express();
 const PORT = process.env.PORT || 3000;
-app.get('/', (_, res) => res.send(`🤖 ${global.namebot} is running!`));
+let qrImageUrl = null;
+
+app.get('/', (_, res) => {
+    if (qrImageUrl) {
+        res.send(`
+            <html>
+            <body style="background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh">
+            <h2 style="color:white">📱 Scan QR Code with WhatsApp</h2>
+            <img src="${qrImageUrl}" style="width:300px;height:300px"/>
+            <p style="color:gray">Refresh page if QR expired</p>
+            </body>
+            </html>
+        `);
+    } else {
+        res.send(`<html><body style="background:#000;color:white;display:flex;align-items:center;justify-content:center;height:100vh"><h2>✅ ${global.namebot} is connected!</h2></body></html>`);
+    }
+});
+
 app.listen(PORT, () => console.log(chalk.cyan(`🌐 Server on port ${PORT}`)));
 
 // ─── Load Plugins ─────────────────────────────────────────────────────────────
@@ -84,16 +102,18 @@ async function startBot() {
         },
         browser: Browsers.ubuntu('Chrome'),
         logger: pino({ level: 'silent' }),
-        printQRInTerminal: true,
+        printQRInTerminal: false,
         generateHighQualityLinkPreview: true,
     });
 
     // ── Connection ───────────────────────────────────────────────────────────
-    sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
+    sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
         if (qr) {
-            console.log(chalk.yellow('\n📱 Scan QR Code above!\n'));
+            qrImageUrl = await QRCode.toDataURL(qr);
+            console.log(chalk.yellow(`\n📱 Open this URL to scan QR:\nhttp://riomen-bot.bonto.run\n`));
         }
         if (connection === 'close') {
+            qrImageUrl = null;
             const shouldReconnect = new Boom(lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut;
             console.log(chalk.red('🔌 Disconnected!'));
             if (shouldReconnect) {
@@ -101,6 +121,7 @@ async function startBot() {
                 startBot();
             }
         } else if (connection === 'open') {
+            qrImageUrl = null;
             console.log(chalk.green(`\n✅ ${global.namebot} Connected!\n`));
         }
     });
@@ -122,7 +143,6 @@ async function startBot() {
             const body = getBody(msg);
             const selectedId = getSelectedId(msg);
 
-            // ── Button Response ───────────────────────────────────────────────
             if (selectedId) {
                 console.log(chalk.magenta(`🔘 Button: ${selectedId}`));
                 const plugin = plugins.get(selectedId);
