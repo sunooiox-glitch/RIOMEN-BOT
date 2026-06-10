@@ -84,20 +84,15 @@ async function startBot() {
         },
         browser: Browsers.ubuntu('Chrome'),
         logger: pino({ level: 'silent' }),
-        printQRInTerminal: false,
+        printQRInTerminal: true,
         generateHighQualityLinkPreview: true,
     });
 
-    // ── Pairing Code ─────────────────────────────────────────────────────────
-    if (!sock.authState.creds.registered) {
-        setTimeout(async () => {
-            const code = await sock.requestPairingCode(String(global.pairingNumber));
-            console.log(chalk.yellow(`\n🔑 Pairing Code: ${code}\n`));
-        }, 3000);
-    }
-
     // ── Connection ───────────────────────────────────────────────────────────
-    sock.ev.on('connection.update', ({ connection, lastDisconnect }) => {
+    sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
+        if (qr) {
+            console.log(chalk.yellow('\n📱 Scan QR Code above!\n'));
+        }
         if (connection === 'close') {
             const shouldReconnect = new Boom(lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut;
             console.log(chalk.red('🔌 Disconnected!'));
