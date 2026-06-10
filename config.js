@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 
 // ─── Owner ────────────────────────────────────────────────────────────────────
-global.pairingNumber = 33759850405;
+global.pairingNumber = ;
 global.owner = [
   ['33759850405',  'ℝ𝕀𝕆𝕄𝔼ℕ', true],
   ['212773608927', 'ℝ𝕀𝕆𝕄𝔼ℕ', true],
