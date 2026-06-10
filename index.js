@@ -1,11 +1,13 @@
 import './config.js';
-import makeWASocket, {
+import pkg from '@whiskeysockets/baileys';
+const {
+    default: makeWASocket,
     useMultiFileAuthState,
     DisconnectReason,
     fetchLatestBaileysVersion,
     makeCacheableSignalKeyStore,
     Browsers
-} from '@whiskeysockets/baileys';
+} = pkg;
 import { Boom } from '@hapi/boom';
 import pino from 'pino';
 import chalk from 'chalk';
@@ -139,7 +141,6 @@ async function startBot() {
                 continue;
             }
 
-            // ── Text Commands ─────────────────────────────────────────────────
             if (!body.startsWith(global.prefix)) continue;
 
             const args = body.slice(global.prefix.length).trim().split(/\s+/);
